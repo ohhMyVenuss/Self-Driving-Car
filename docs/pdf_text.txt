@@ -1,0 +1,196 @@
+TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN 
+VÀ TRUYỀN THÔNG VIỆT – HÀN 
+KHOA KTMT-ĐT 
+ 
+CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM 
+Độc lập – Tự do – Hạnh phúc  
+ 
+Đà Nẵng, ngày  tháng  năm 2026 
+THỂ LỆ GIẢI ĐẤU ROBOCAR 2026 
+CHỦ ĐỀ: "CYBER ASCENSION - KỶ NGUYÊN VƯƠN CAO" 
+I. ĐỐI TƯỢNG THAM GIA & THÀNH VIÊN ĐỘI 
+Số lượng: Mỗi đội có từ 8 - 10 thành viên. 
+Điều kiện:  
+o Thành viên phải là sinh viên còn đang theo học tại trường.  
+o Sinh viên đã đăng ký thi trước khi tốt nghiệp vẫn được phép tham gia.  
+o Lưu ý: Sinh viên đã tốt nghiệp (tính đến thời điểm đăng ký) không được 
+phép tham dự 
+II. CÂU CHUYỆN CHỦ ĐỀ (THEME STORY) 
+Năm 2050, nhân loại bắt đầu di cư lên các "Thành phố trên mây" (Sky 
+Citadels). Để hoàn thiện hệ thống năng lượng cho thành phố, các kỹ sư phải  
+triển khai một biệt đội Robot đặc nhiệm gồm 2 thành viên: 
+1.    SCOUT (Robot Trinh Sát - Xe Tự Hành): Có nhiệm vụ thâm nhập 
+vào tàn tích mê cung, kích hoạt các trạm năng lượng (Cổng C1, C2) để 
+mở đường. 
+2.    BUILDER (Robot Kiến Tạo - Xe Điều Khiển): Là cỗ máy hạng 
+nặng, có nhiệm vụ vận chuyển các khối vật chất lượng tử (Quantum 
+Blocks) vượt qua địa hình hiểm trở để xây dựng lên "Ngọn Tháp Vô Cực" 
+(Infinity Tower). 
+Sứ mệnh của các đội thi: Trong vòng 10 phút, phải hoàn thành việc kích 
+hoạt năng lượng và đặt viên đá cuối cùng lên đỉnh tháp. 
+III. YÊU CẦU KỸ THUẬT ROBOT (ROBOT SPECIFICATIONS)  
+1. SCOUT - XE TỰ HÀNH (AUTONOMOUS) 
+
+● Kích thước giới hạn: Toàn bộ robot phải nằm gọn trong hộp 20cm x 
+20cm x 25cm (Cao) 
+● Nhiệm vụ: Dò line (Line Follow) và Giải mê cung (Maze Solving). 
+● Quy chế "Chuyển chế độ không chạm" (Zero-Touch Mode Switch): 
+○ Robot cần chuyển từ thuật toán Dò Line sang thuật toán Giải Mê 
+Cung sau khi qua Cổng 1. 
+○ Luật mở: Các đội được phép sử dụng mọi giải pháp kỹ thuật 
+(cảm biến va chạm, cảm biến từ trường, timer, la bàn số, camera 
+AI...) để robot tự nhận biết thời điểm chuyển chế độ.  
+○ Luật cấm: Tuyệt đối KHÔNG được có sự tác động cơ học từ con 
+người 
+2. BUILDER - XE ĐIỀU KHIỂN (MANUAL) 
+● Thử thách "Biến hình" (Transformer): 
+○ Trạng thái Xuất phát: Phải thu gọn toàn bộ cơ cấu trong ô vuông 
+20cm x 20cm (chiều cao tùy ý, khuyến cáo <30cm). 
+○ Trạng thái Thi đấu: Sau khi rời vạch xuất phát, robot ĐƯỢC 
+PHÉP bung càng, mở rộng chân đế, vươn tay gắp... không giới hạn 
+kích thước để đảm bảo độ vững chãi khi nâng hàng.  
+● Yêu cầu cơ khí: 
+○ Hệ lhống nâng hạ (Lift): Phải vươn cao tối thiểu >30cm. 
+○ Tay gắp (Gripper): Phải có độ chính xác cực cao (sai số <5mm) để 
+đặt vật 10cm vào ô 15cm. 
+IV. QUY CÁCH SÂN BÃI & VẬT THỂ (FIELD & OBJECTS)  
+
+ 
+Figure 1: Sơ đồ sân đấu cho 2 Đội 
+ 
+Ban tổ chức quy định kích thước đồng bộ như sau: 
+1. Kiện Hàng (The Materials) 
+Tất cả các kiện hàng đều có kích thước ngang (đường kính) là 10cm.  
+ Kiện V, K, U (Khối chữ cái): Có hình dạng khối vòng tròn khuyết tâm 
+(Donut shape), đường kính ngoài 10cm, dùng để thả vào Trụ ghi điểm.  
+ Kiện E (Victory Object - Trụ Tròn): Đường kính 10cm, Cao 10cm 
+dạng khối đặc. 
+2. Vị Trí Đích (The Drop Zones) - "Zero Tolerance" 
+● Zone 1 (Khu vực VKU): Nằm trong ô vuông 10x10cm trên mặt sàn. Tại 
+đây được gắn cố định một Trục đứng (Cột thả vòng) có chiều cao [thêm 
+
+
+thông số chiều cao vào, ví dụ: 20cm]. Nhiệm vụ của robot là thả chính 
+xác các khối Donut (V, K, U) lọt vào trục đứng này.  
+● Zone 2 (Tháp Chính - Kim Tự Tháp Bậc Thang Tranh ĐẤU ):  
+○ Cấu trúc 3 tầng chồng lên nhau. 
+○ Tầng 1 (Đế): 30x30cm - Cao 10cm. 
+○ Tầng 2 (Thân): 20x20cm - Cao 10cm. 
+○ Tầng 3 (Đỉnh): Mặt đỉnh: Đường kính 15cm - Cao 10cm. 
+ð Tổng độ cao: 30cm 
+V. KỊCH BẢN THI ĐẤU (GAMEPLAY SCRIPT)  
+Tổng thời gian: 10 Phút . 
+Đội thi được quyền RESET KHÔNG GIỚI HẠN (nhưng đồng hồ không 
+dừng). 
+GIAI ĐOẠN 1: KHỞI ĐỘNG (INITIATION) 
+1.    Start: Trọng tài thổi còi. Xe SCOUT (Tự hành) xuất phát.  
+2.    Line Tracing: SCOUT chạy theo vạch kẻ đường, vượt qua các đoạn 
+cua gấp. 
+3.    Unlock Gate 1: SCOUT húc vào trạm cảm biến C1. Cổng số 1 mở ra. 
+4.    Deployment: Xe BUILDER (Điều khiển) xuất phát => "Biến hình" 
+mở rộng cơ cấu => Gắp Kiện V và K thả lọt vào Trục đứng tại Zone 1. 
+GIAI ĐOẠN 2: GIẢI MÃ (DECODING) 
+5.    Mode Switching: Sau khi tác động vào C1, Xe SCOUT tự động 
+chuyển sang chế độ "Giải Mê Cung" (bằng cảm biến/code, không chạm 
+tay). 
+6.    Maze Run: SCOUT tự tìm đường trong khu vực không có line.  
+7.    Unlock Gate 2: SCOUT tìm được lối ra, húc vào trạm cảm biến C2. 
+Cổng số 2 mở ra. 
+
+8.    Elevation: Xe BUILDER đi qua Cổng 2 => Gắp Kiện U => Nâng lên 
+cao và thả tiếp vào Trục đứng tại Zone 1, hoàn thành việc xếp chồng 3 
+khối để kết nối thành chữ VKU. 
+GIAI ĐOẠN 3: CHINH PHỤC (ASCENSION) 
+9.    The Final Carry: Xe BUILDER kẹp chặt Kiện E (Trụ tròn). 
+10. Obstacle: Xe BUILDER mang theo Kiện E vượt qua Cầu Bập Bênh 
+(Seesaw). Yêu cầu giữ thăng bằng tốt để không làm rơi vật.  
+11. The Climb: Xe BUILDER tiếp cận Tháp Chính (Vị trí 5). Cơ cấu 
+nâng hoạt động hết công suất đưa Kiện E lên độ cao >30cm. 
+12. Precision Drop: Căn chỉnh tọa độ tuyệt đối để đặt Kiện E (đường 
+kính 10cm) vào mặt đỉnh tháp (đường kính 15cm). 
+13. VICTORY: Khi Kiện E đứng vững trên đỉnh tháp và Robot rút tay 
+kẹp về, đội thi đạt CHIẾN THẮNG TUYỆT ĐỐI (RONAN). 
+VI. QUY CHẾ VẬN HÀNH & XỬ LÝ LỖI 
+1. Luật Reset (Thử lại không giới hạn)  
+Để khuyến khích tinh thần không bỏ cuộc, Ban tổ chức áp dụng luật Reset mở:  
+● Quyền lợi: Đội trưởng có quyền hô "RESET" bất cứ lúc nào cảm thấy 
+robot gặp sự cố (kẹt, lạc đường, rơi vật). 
+● Thủ tục: 
+○ Thí sinh được phép dùng tay nhấc robot về Check-point (Điểm 
+kiểm soát) gần nhất. 
+○ Check-point Xe Tự Hành: Vạch Xuất phát (nếu chưa qua C1) hoặc 
+Cửa Mê cung (nếu đã qua C1). 
+○ Check-point Xe Điều Khiển: Vạch Xuất phát ban đầu. 
+● Lưu ý: Thời gian thi đấu vẫn trôi liên tục. 
+2. Luật Phạm Quy (Phạt nặng) 
+● Chạm tay vào robot khi robot đang chạy mà chưa hô "Reset".  
+● Xe Điều khiển cố tình chèn ép/tấn công Xe Tự hành.  
+● Đặt sai vị trí  => Không được tính điểm kiện đó.  
+
+VII. CƠ CẤU TÍNH ĐIỂM (SCORING) 
+Ưu tiên xếp hạng theo thứ tự sau: 
+1.    Ưu tiên 1: Đội đạt RONAN (Hoàn thành tháp số 5) sớm nhất. 
+2.    Ưu tiên 2: Tổng điểm các nhiệm vụ (nếu hết 10 phút chưa xong).  
+o   Kích hoạt Cổng 1, Cổng 2: 20 điểm/cổng. 
+o   Đặt đúng Kiện V, K: 10 điểm/kiện. 
+o   Đặt đúng Kiện U  : 20 điểm/kiện. 
+o   Đặt đúng Kiện E (Tháp 30cm): 50 điểm. 
+3.    Ưu tiên 3: Thời gian hoàn thành nhiệm vụ ghi điểm cuối cùng. 
+VIII. BỔ SUNG LUẬT THI ĐẤU: VÒNG CHUNG KẾT  
+(Áp dụng cho Vị trí đèn tín hiệu tại Khu vực bắt đầu xe tự hành) 
+1. Quy định về Nhận diện Đèn Tín hiệu (AI Traffic Light Detection)  
+ Đối tượng áp dụng: Xe SCOUT (Xe Tự Hành). 
+ Yêu cầu: Tại Vòng Chung kết, Xe SCOUT không còn xuất phát theo 
+hiệu lệnh còi của trọng tài một cách đơn thuần. Robot phải sử dụng 
+camera và thuật toán Trí tuệ nhân tạo (AI) để tự nhận diện trạng thái của 
+cụm đèn tín hiệu giao thông (xanh/vàng/đỏ) được đặt tại vạch xuất phát.  
+ Quy trình xuất phát: 
+1. Robot được đặt ở trạng thái sẵn sàng tại vạch xuất phát.  
+2. Hệ thống đèn sẽ chuyển màu (ví dụ: Đỏ -> Vàng -> Xanh). 
+3. Xe SCOUT phải chỉ được phép di chuyển khi và chỉ khi nhận 
+diện được đèn đã chuyển sang màu XANH. 
+2. Quy chế về Tài nguyên và Công nghệ 
+
+ Luật mở (Không giới hạn): Để thực hiện nhiệm vụ detect AI này, các 
+đội thi được phép sử dụng mọi giải pháp kỹ thuật và tài nguyên mà 
+không bị giới hạn. 
+ Ví dụ về thiết bị hỗ trợ: 
+o Các loại Camera (USB camera, MIPI camera, v.v.). 
+o Các board mạch nhúng hỗ trợ AI (Jetson Nano, Raspberry Pi 4/5, 
+Google Coral, v.v.). 
+o Các module AI chuyên dụng (HuskyLens, Maix Dock, v.v.). 
+o Mọi thuật toán nhận diện (YOLO, SSD, SVM, HSV masking, v.v.) 
+đều được chấp nhận. 
+3. Chế tài xử phạt (Lỗi Phạm Quy) 
+Đây được tính là lỗi phạm quy nghiêm trọng trong vận hành tại Vòng Chung 
+kết: 
+Hành vi vi phạm Hình thức xử phạt 
+Xuất phát sai đèn: Robot di chuyển khi đèn vẫn 
+đang màu Đỏ hoặc Vàng (Vượt đèn đỏ). 
+Trừ 10 điểm vào tổng 
+điểm của lượt thi. 
+ 
+ IX. LƯU Ý VÀ THẮC MẮC : 
+1. Độ an toàn 
+- Tất cả các xe tham gia thi đấu phải được thiết kế an toàn, không 
+gây nguy hiểm tới người điều khiển, các trọng tài hoặc khán giả.  
+2. Các quy định  khác 
+- Với những trường hợp chưa nêu trong luật thi đấu, trọng tài và ban 
+tổ chức có quyền quyết định và đó là quyết định cuối cùng trong 
+trường hợp có tranh chấp.  
+- Mọi chỉnh sửa về luật chơi sẽ được BTC thông báo cập nhật trên 
+Fanpage chính  thức của cuộc thi.  
+
+- Các đội được khuyến khích trang trí xe theo phong cách riêng.  
+- Các đội tham dự phải có trách nhiệm cung cấp thông tin về đội 
+mình cho Ban tổ chức trong quá trình chế tạo xe nếu được yêu cầu. 
+(Kể cả ghi hình những công đoạn chế tạo xe để làm tư liệu cho 
+BTC). 
+3. Các câu hỏi về luật chơi 
+- Các câu hỏi về luật chơi xin gửi về địa chỉ thư điện tử của BTC 
+cuộc thi: 
+- Email ce@vku.udn.vn 
+- Fanpage: www.facebook.com/ce.vku.udn.vn 
+- Số điện thoại: 0914113974 
+TM. BAN TỔ CHỨC  
+ 
