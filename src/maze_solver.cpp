@@ -42,51 +42,195 @@ int walls[MAZE_SIZE][MAZE_SIZE];
 float targetAngle = 0.0; // Góc mục tiêu cho MPU6050 giữ thẳng xe
 
 // ----------------------------------------------------
+// TIỆN ÍCH: SCAN I2C BUS VÀ IN KẾT QUẢ
+// ----------------------------------------------------
+void scanI2CBus() {
+    Serial.println("[I2C] === Bat dau scan I2C bus (SDA=21, SCL=22) ===");
+    int found = 0;
+    for (byte addr = 1; addr < 127; addr++) {
+        Wire.beginTransmission(addr);
+        byte err = Wire.endTransmission();
+        if (err == 0) {
+            Serial.printf("[I2C]   Thiet bi tim thay tai dia chi: 0x%02X", addr);
+            // Gợi ý tên thiết bị theo địa chỉ phổ biến
+            if (addr == 0x68 || addr == 0x69) Serial.print("  <-- MPU6050");
+            else if (addr == 0x29)             Serial.print("  <-- VL53L0X (dia chi mac dinh)");
+            else if (addr == 0x30)             Serial.print("  <-- VL53L0X FRONT");
+            else if (addr == 0x31)             Serial.print("  <-- VL53L0X LEFT");
+            else if (addr == 0x32)             Serial.print("  <-- VL53L0X RIGHT");
+            Serial.println();
+            found++;
+        } else if (err == 4) {
+            Serial.printf("[I2C]   Loi khong xac dinh tai dia chi: 0x%02X (err=%d)\n", addr, err);
+        }
+    }
+    if (found == 0) {
+        Serial.println("[I2C] CANH BAO: Khong tim thay thiet bi nao! Kiem tra day noi SDA/SCL va nguon.");
+    } else {
+        Serial.printf("[I2C] Ket qua: tim thay %d thiet bi.\n", found);
+    }
+    Serial.println("[I2C] === Ket thuc scan ===");
+}
+
+// ----------------------------------------------------
 // KHỞI TẠO CẢM BIẾN
 // ----------------------------------------------------
 void initSensors() {
-    Wire.begin();
-    
-    // 1. Khởi tạo MPU6050
-    Serial.println("[MAZE] Khoi tao MPU6050...");
-    byte status = mpu.begin();
-    if (status != 0) {
-        Serial.println("[MAZE] LOI: Khong tim thay MPU6050");
-    } else {
-        Serial.println("[MAZE] Dang calib MPU6050. Vui long GIU YEN XE...");
-        delay(1000);
-        mpu.calcOffsets(); 
-        Serial.println("[MAZE] MPU6050 Calib Xong!");
+    Serial.println("[MAZE] ============================================");
+    Serial.println("[MAZE] Bat dau khoi tao cam bien (Wire SDA=21, SCL=22)");
+    Wire.begin(21, 22);
+    Wire.setClock(100000); // 100kHz - chuan, tuong thich toi da voi clone module
+    delay(200); // Cho I2C bus va cac module on dinh sau khi cap nguon
+
+    // --- CHAN DOAN: Thu tung toc do I2C va ca 2 dia chi MPU6050 ---
+    Serial.println("[MAZE]   [Chan doan] Thu ket noi MPU6050 tai 0x68 va 0x69...");
+    bool mpuFound = false;
+    uint8_t mpuAddr = 0x68;
+    uint32_t speeds[] = {100000, 50000, 400000};
+    String speedNames[] = {"100kHz", "50kHz", "400kHz"};
+
+    for (int si = 0; si < 3 && !mpuFound; si++) {
+        Wire.setClock(speeds[si]);
+        delay(10);
+        for (uint8_t addr : {0x68, 0x69}) {
+            Wire.beginTransmission(addr);
+            Wire.write(0x6B); // PWR_MGMT_1
+            Wire.write(0x00); // Clear sleep
+            byte s = Wire.endTransmission();
+            Serial.printf("[MAZE]     Speed=%-7s Addr=0x%02X Wake status=%d %s\n",
+                          speedNames[si].c_str(), addr, s, s == 0 ? "<= OK!" : "");
+            if (s == 0) {
+                mpuFound = true;
+                mpuAddr  = addr;
+                Serial.printf("[MAZE]   => MPU tim thay tai 0x%02X, speed=%s\n", addr, speedNames[si].c_str());
+                break;
+            }
+        }
     }
-    
-    // 2. Khởi tạo 3 cảm biến VL53L0X
-    Serial.println("[MAZE] Khoi tao VL53L0X...");
+    if (!mpuFound) {
+        Serial.println("[MAZE]   => KHONG TIM THAY MPU6050 o moi toc do / dia chi!");
+        Serial.println("[MAZE]      Kha nang cao: day SDA/SCL bi hong hoac pull-up qua yeu.");
+    }
+    // Giu nguyen toc do 400kHz - MPU6050 clone nay can 400kHz
+    // (se doi sang 100kHz truoc khi init VL53L0X)
+
+    // --- SCAN I2C TRUOC KHI INIT ---
+    Serial.println("[MAZE] [Buoc 0] Scan I2C bus truoc khi init...");
+    scanI2CBus();
+
+    // -------------------------------------------------------
+    // 1. Khởi tạo MPU6050
+    // -------------------------------------------------------
+    Serial.println("[MAZE] [Buoc 1] Khoi tao MPU6050 (dia chi 0x68)...");
+    byte status = 255;
+    for (int attempt = 1; attempt <= 5; attempt++) {
+        status = mpu.begin();
+        Serial.printf("[MAZE]   Lan thu %d: mpu.begin() = %d", attempt, status);
+        if (status == 0) {
+            Serial.println(" => THANH CONG");
+            break;
+        }
+        // Giai thich ma loi cu the
+        if (status == 1) Serial.println(" => Loi I2C (NACK) - thiet bi khong phan hoi");
+        else if (status == 2) Serial.println(" => Loi I2C (NACK on address) - khong thay 0x68");
+        else if (status == 3) Serial.println(" => Loi I2C (NACK on data)");
+        else if (status == 4) Serial.println(" => Loi I2C khac");
+        else                  Serial.printf(" => Loi khong xac dinh (status=%d)\n", status);
+        delay(200); // Doi roi thu lai
+    }
+    if (status != 0) {
+        Serial.println("[MAZE]   MPU6050 THAT BAI sau 5 lan thu!");
+        Serial.println("[MAZE]   => Kiem tra: day SDA(GPIO21)/SCL(GPIO22), nguon 3.3V, chan AD0 phai o muc LOW");
+        Serial.println("[MAZE]   => Tiep tuc khong co MPU6050 (xe se khong giu thang duoc)");
+    } else {
+        Serial.println("[MAZE]   Dang calib MPU6050, vui long GIU YEN XE 1 giay...");
+        delay(1000);
+        mpu.calcOffsets();
+        Serial.println("[MAZE]   MPU6050 calib xong!");
+    }
+
+    // -------------------------------------------------------
+    // 2. Khởi tạo 3 cảm biến VL53L0X qua XSHUT
+    // -------------------------------------------------------
+    Wire.setClock(100000); // VL53L0X hoat dong o 100kHz
+    delay(10);
+    Serial.println("[MAZE] [Buoc 2] Khoi tao 3x VL53L0X qua chan XSHUT (100kHz)...");
+    Serial.printf("[MAZE]   Cau hinh XSHUT: FRONT=GPIO%d, LEFT=GPIO%d, RIGHT=GPIO%d\n",
+                  XSHUT_FRONT, XSHUT_LEFT, XSHUT_RIGHT);
+
     pinMode(XSHUT_FRONT, OUTPUT);
-    pinMode(XSHUT_LEFT, OUTPUT);
+    pinMode(XSHUT_LEFT,  OUTPUT);
     pinMode(XSHUT_RIGHT, OUTPUT);
-    
-    // Đưa tất cả vào trạng thái Reset (Tắt)
+
+    // Reset tất cả - keo XSHUT xuong LOW de tat cam bien
     digitalWrite(XSHUT_FRONT, LOW);
-    digitalWrite(XSHUT_LEFT, LOW);
+    digitalWrite(XSHUT_LEFT,  LOW);
     digitalWrite(XSHUT_RIGHT, LOW);
-    delay(10);
-    
-    // Bật Front và cấp địa chỉ 0x30
-    digitalWrite(XSHUT_FRONT, HIGH);
-    delay(10);
-    if (!loxFront.begin(0x30)) Serial.println(F("[MAZE] LOI: VL53L0X FRONT khong ket noi"));
-    
-    // Bật Left và cấp địa chỉ 0x31
-    digitalWrite(XSHUT_LEFT, HIGH);
-    delay(10);
-    if (!loxLeft.begin(0x31)) Serial.println(F("[MAZE] LOI: VL53L0X LEFT khong ket noi"));
-    
-    // Bật Right và cấp địa chỉ 0x32
-    digitalWrite(XSHUT_RIGHT, HIGH);
-    delay(10);
-    if (!loxRight.begin(0x32)) Serial.println(F("[MAZE] LOI: VL53L0X RIGHT khong ket noi"));
-    
-    Serial.println("[MAZE] Khoi tao VL53L0X OK.");
+    Serial.println("[MAZE]   Tat het 3 cam bien (XSHUT=LOW)... OK");
+    delay(50); // Doi du lau de cam bien reset hoan toan
+
+    // --- FRONT ---
+    Serial.printf("[MAZE]   [2a] FRONT: XSHUT GPIO%d, init 0x30...\n", XSHUT_FRONT);
+    bool frontOk = false;
+    for (int r = 1; r <= 3; r++) {
+        // Hard-reset sensor ve 0x29 truoc moi lan thu
+        digitalWrite(XSHUT_FRONT, LOW);  delay(20);
+        digitalWrite(XSHUT_FRONT, HIGH); delay(50);
+        Serial.printf("[MAZE]     FRONT lan %d: ", r);
+        frontOk = loxFront.begin(0x30);
+        if (frontOk) { Serial.println("OK (0x30)"); break; }
+        Serial.println("THAT BAI");
+    }
+    if (!frontOk) {
+        Serial.println("[MAZE]   FRONT => THAT BAI sau 3 lan");
+        Serial.println("[MAZE]     Kiem tra: day XSHUT GPIO16, day SDA/SCL, nguon VCC 3.3V");
+    } else {
+        Serial.println("[MAZE]   FRONT => OK (dia chi 0x30)");
+    }
+
+    // --- LEFT ---
+    Serial.printf("[MAZE]   [2b] LEFT: XSHUT GPIO%d, init 0x31...\n", XSHUT_LEFT);
+    bool leftOk = false;
+    for (int r = 1; r <= 3; r++) {
+        digitalWrite(XSHUT_LEFT, LOW);  delay(20);
+        digitalWrite(XSHUT_LEFT, HIGH); delay(50);
+        Serial.printf("[MAZE]     LEFT lan %d: ", r);
+        leftOk = loxLeft.begin(0x31);
+        if (leftOk) { Serial.println("OK (0x31)"); break; }
+        Serial.println("THAT BAI");
+    }
+    if (!leftOk) {
+        Serial.println("[MAZE]   LEFT  => THAT BAI sau 3 lan");
+        Serial.println("[MAZE]     Kiem tra: day XSHUT GPIO17, day SDA/SCL, nguon VCC 3.3V");
+    } else {
+        Serial.println("[MAZE]   LEFT  => OK (dia chi 0x31)");
+    }
+
+    // --- RIGHT ---
+    Serial.printf("[MAZE]   [2c] RIGHT: XSHUT GPIO%d, init 0x32...\n", XSHUT_RIGHT);
+    bool rightOk = false;
+    for (int r = 1; r <= 3; r++) {
+        digitalWrite(XSHUT_RIGHT, LOW);  delay(20);
+        digitalWrite(XSHUT_RIGHT, HIGH); delay(50);
+        Serial.printf("[MAZE]     RIGHT lan %d: ", r);
+        rightOk = loxRight.begin(0x32);
+        if (rightOk) { Serial.println("OK (0x32)"); break; }
+        Serial.println("THAT BAI");
+    }
+    if (!rightOk) {
+        Serial.println("[MAZE]   RIGHT => THAT BAI sau 3 lan");
+        Serial.println("[MAZE]     Kiem tra: day XSHUT GPIO23, day SDA/SCL, nguon VCC 3.3V");
+    } else {
+        Serial.println("[MAZE]   RIGHT => OK (dia chi 0x32)");
+    }
+
+    // --- SCAN I2C SAU KHI INIT ---
+    Serial.println("[MAZE] [Buoc 3] Scan I2C bus sau khi init de xac nhan...");
+    scanI2CBus();
+
+    Serial.println("[MAZE] ============================================");
+    Serial.println("[MAZE] Ket thuc khoi tao cam bien.");
+    Serial.println("[MAZE] ============================================");
 }
 
 // ----------------------------------------------------

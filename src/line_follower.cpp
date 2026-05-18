@@ -10,11 +10,13 @@ int sensorMax[SENSOR_COUNT];
 float Kp = 0.12f;
 float Ki = 0.0f;
 float Kd = 0.35f;
-int baseSpeed = 500;
+int baseSpeed = 180;  // PWM 8-bit: max = 255. 500 la sai, motor khong chay dung!
 
 // Constants
 static const int SENSOR_WEIGHTS[SENSOR_COUNT] = {0, 1000, 2000, 3000, 4000, 5000, 6000, 7000};
-static const int BLACK_RAW_THRESHOLD = 4000;
+// QTR-8A: Nen sang = ADC cao (~1500-4095), Line den = ADC THAP (~0-400)
+// Phat hien line khi RAW NHAT HON nguong nay
+static const int BLACK_RAW_THRESHOLD = 800;
 static const int SENSOR_ACTIVE_THRESHOLD = 100;
 static const int ADC_SAMPLES = 4;
 static const unsigned long CALIBRATION_TIME_MS = 3000;
@@ -50,7 +52,9 @@ static int clampMotor(int speed) {
 
 static int normalizeSensorValue(int raw) {
   raw = constrain(raw, 0, 4095);
-  if (raw >= BLACK_RAW_THRESHOLD) return 1000;
+  // Line DEN: phan xa thap -> ADC THAP -> raw < nguong => detect
+  // Nen SANG: phan xa cao -> ADC CAO -> raw >= nguong => khong phai line
+  if (raw <= BLACK_RAW_THRESHOLD) return 1000;
   return 0;
 }
 
@@ -160,65 +164,26 @@ void setupLineFollower() {
 
   setMotor(0, 0);
   delay(100);
-  
-  // Motor test
-  Serial.println("[TEST] LEFT motor 3s at 200...");
-  setMotor(200, 0);
-  delay(3000);
-  
-  Serial.println("[TEST] RIGHT motor 3s at 200...");
-  setMotor(0, 200);
-  delay(3000);
-  
-  Serial.println("[TEST] BOTH motors 3s at 200...");
-  setMotor(200, 200);
-  delay(3000);
-  
-  setMotor(0, 0);
-  delay(500);
-  Serial.println("[TEST] Done. Starting line follow...");
-  
-  calibrateSensors();
-  
+
+  // Motor test & calibration da duoc tat (cam bien QTR da thao ra)
+  // setMotor(200, 0); delay(3000);
+  // setMotor(0, 200); delay(3000);
+  // setMotor(200, 200); delay(3000);
+  // calibrateSensors();
+
   lastPidMs = millis();
 }
 
 void loopLineFollower() {
   readSensors();
-  
+
   int position = calculateLinePosition();
-  int error = position - 3500;
+  int error    = position - 3500;
   int correction = computePID(error);
 
-  int left = baseSpeed + correction;
+  int left  = baseSpeed + correction;
   int right = baseSpeed - correction;
 
   setMotor(left, right);
-  
-  // Debug output
-  static unsigned long lastDbg = 0;
-  if (millis() - lastDbg > 100) {
-    lastDbg = millis();
-    
-    Serial.print("RAW=[");
-    for (int i = 0; i < SENSOR_COUNT; i++) {
-      Serial.print(sensorValues[i]);
-      if (i < SENSOR_COUNT - 1) Serial.print(",");
-    }
-    Serial.print("] NORM=[");
-    for (int i = 0; i < SENSOR_COUNT; i++) {
-      Serial.print(normalizedValues[i]);
-      if (i < SENSOR_COUNT - 1) Serial.print(",");
-    }
-    Serial.print("] pos=");
-    Serial.print(position);
-    Serial.print(" err=");
-    Serial.print(error);
-    Serial.print(" pid=");
-    Serial.print(correction);
-    Serial.print(" L=");
-    Serial.print(left);
-    Serial.print(" R=");
-    Serial.println(right);
-  }
+  // Log RAW/NORM da duoc tat (cam bien QTR khong con)
 }

@@ -2,6 +2,62 @@ README — Sơ đồ chân (Wiring)
 
 Mục đích: mô tả cách các chân GPIO được cắm trên bo mạch ESP32 trong dự án `self-driving-car`.
 
+## 🛠️ Sơ Đồ Nối Mạch (Wiring Diagram)
+
+### 1. ESP32 <-> Cảm biến line (QTR-8)
+| Cảm biến QTR | GPIO ESP32 |
+|--------------|------------|
+| Sensor 0     | 32         |
+| Sensor 1     | 33         |
+| Sensor 2     | 34         |
+| Sensor 3     | 35         |
+| Sensor 4     | 27         |
+| Sensor 5     | 4          |
+| Sensor 6     | 25         |
+| Sensor 7     | 26         |
+| IR_LED       | 13         |
+
+### 2. ESP32 <-> Driver Motor (DRV8833)
+| DRV8833 Input | GPIO ESP32 |
+|---------------|------------|
+| AIN1          | 12         |
+| AIN2          | 14         |
+| BIN1          | 18         |
+| BIN2          | 19         |
+
+- VCC DRV8833: 5V
+- GND DRV8833 nối chung GND ESP32
+
+### 3. ESP32 <-> Cảm biến va chạm (Chạm trạm C1, C2)
+| Cảm biến      | GPIO ESP32 |
+|---------------|------------|
+| C1            | 5          |
+| C2            | 15         |
+
+### 4. ESP32 <-> Cảm biến khoảng cách VL53L0X (3 cái, I2C, dùng XSHUT)
+| Cảm biến VL53L0X | SDA | SCL | XSHUT GPIO | VCC  | GND  |
+|------------------|-----|-----|------------|------|------|
+| Front            | 21  | 22  | 16         | 3.3V | GND  |
+| Left             | 21  | 22  | 17         | 3.3V | GND  |
+| Right            | 21  | 22  | 23         | 3.3V | GND  |
+
+- Lưu ý: SDA/SCL dùng chung bus với MPU6050. XSHUT giúp đổi địa chỉ I2C từng cảm biến.
+
+### 5. ESP32 <-> MPU6050 (Cảm biến góc, I2C)
+| MPU6050 | SDA | SCL | VCC  | GND  |
+|---------|-----|-----|------|------|
+|         | 21  | 22  | 3.3V | GND  |
+
+---
+
+**Tóm tắt sơ đồ tổng thể:**
+- ESP32 (30 chân)
+- 3x VL53L0X (Front, Left, Right) nối I2C (SDA 21, SCL 22), mỗi cảm biến có XSHUT riêng (16, 17, 23)
+- 1x MPU6050 nối I2C (SDA 21, SCL 22)
+- 1x DRV8833 nối các chân 12, 14, 18, 19
+- 1x QTR-8 nối các chân 32, 33, 34, 35, 27, 4, 25, 26
+- 2x cảm biến va chạm (C1: 5, C2: 15)
+
 1) Cảm biến IR (QTR, 8 kênh analog)
 - Cảm biến thứ tự từ trái sang phải (index 0..7):
   - Sensor 0 -> GPIO 32
