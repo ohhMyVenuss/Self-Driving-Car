@@ -1,64 +1,51 @@
-#include "robot_common.h"
-#include "maze_solver.h"
+#include <Arduino.h>
+#include <Wire.h>
+#include <VL53L0X.h>
 
-// Định nghĩa chân cảm biến va chạm C1 và C2
-// (Giả sử bạn dùng công tắc hành trình hoặc cảm biến tiệm cận)
-#define SENSOR_C1_PIN 5  
-#define SENSOR_C2_PIN 15 
+constexpr uint8_t SDA_PIN = 21;
+constexpr uint8_t SCL_PIN = 22;
+constexpr int XSHUT_PIN = 16;
+constexpr int GPIO1_PIN = -1;
 
-enum RobotMode {
-  MODE_LINE_FOLLOWER,
-  MODE_MAZE_SOLVER,
-  MODE_STOP
-};
-
-RobotMode currentMode = MODE_LINE_FOLLOWER;
+VL53L0X sensor;
 
 void setup() {
   Serial.begin(115200);
-  
-  // Khởi tạo các chân tín hiệu C1, C2
-  pinMode(SENSOR_C1_PIN, INPUT_PULLUP);
-  pinMode(SENSOR_C2_PIN, INPUT_PULLUP);
+  delay(1000);
+  Serial.println("VL53L0X test");
 
-  setupLineFollower();
-  setupMazeSolver();
-  
-  Serial.println("System Ready. Mode: LINE FOLLOWER");
+  if (XSHUT_PIN >= 0) {
+    pinMode(XSHUT_PIN, OUTPUT);
+    digitalWrite(XSHUT_PIN, LOW);
+    delay(10);
+    digitalWrite(XSHUT_PIN, HIGH);
+    delay(10);
+  }
+
+  if (GPIO1_PIN >= 0) {
+    pinMode(GPIO1_PIN, INPUT);
+  }
+
+  Wire.begin(SDA_PIN, SCL_PIN);
+  sensor.setTimeout(500);
+  if (!sensor.init()) {
+    Serial.println("Failed to detect VL53L0X");
+    while (true) {
+      delay(100);
+    }
+  }
+
+  sensor.startContinuous(50);
 }
 
 void loop() {
-  // 1. Kiểm tra húc vào trạm C1 -> Chuyển sang Dò Mê Cung
-  if (currentMode == MODE_LINE_FOLLOWER) {
-    if (digitalRead(SENSOR_C1_PIN) == LOW) {
-      delay(50); // Chống dội nút
-      if (digitalRead(SENSOR_C1_PIN) == LOW) {
-        currentMode = MODE_MAZE_SOLVER;
-        setMotor(0, 0); // Dừng lại một nhịp trước khi đổi thuật toán
-        Serial.println("!!! HIT C1: SWITCHED TO MAZE SOLVER !!!");
-        delay(1000); 
-      }
-    }
+  uint16_t range = sensor.readRangeContinuousMillimeters();
+  if (sensor.timeoutOccurred()) {
+    Serial.println("TIMEOUT");
+  } else {
+    Serial.print("Distance: ");
+    Serial.print(range);
+    Serial.println(" mm");
   }
-  
-  // 2. Kiểm tra húc vào trạm C2 (sau khi đã giải xong mê cung) -> Dừng hoàn toàn
-  if (currentMode == MODE_MAZE_SOLVER) {
-    if (digitalRead(SENSOR_C2_PIN) == LOW) {
-      delay(50);
-      if (digitalRead(SENSOR_C2_PIN) == LOW) {
-        currentMode = MODE_STOP;
-        setMotor(0, 0); // Đã chạm đích C2, dừng động cơ
-        Serial.println("!!! HIT C2: MAZE FINISHED. STOPPING !!!");
-      }
-    }
-  }
-
-  // 3. Chạy thuật toán tùy theo Mode
-  if (currentMode == MODE_LINE_FOLLOWER) {
-    loopLineFollower();
-  } else if (currentMode == MODE_MAZE_SOLVER) {
-    loopMazeSolver();
-  } else if (currentMode == MODE_STOP) {
-    setMotor(0, 0); // Đảm bảo xe luôn dừng
-  }
+  delay(100);
 }

@@ -2,15 +2,15 @@
 #include "maze_solver.h"
 #include <Wire.h>
 #include <MPU6050_light.h>
-#include <Adafruit_VL53L0X.h>
+#include <VL53L0X.h>
 
 // --- CẤU HÌNH PHẦN CỨNG MAZE SOLVER ---
 MPU6050 mpu(Wire);
 
-// Khai báo 3 cảm biến khoảng cách (Front, Left, Right)
-Adafruit_VL53L0X loxFront = Adafruit_VL53L0X();
-Adafruit_VL53L0X loxLeft = Adafruit_VL53L0X();
-Adafruit_VL53L0X loxRight = Adafruit_VL53L0X();
+// Khai báo 3 cảm biến khoảng cách (Front, Left, Right) - Pololu VL53L0X
+VL53L0X loxFront;
+VL53L0X loxLeft;
+VL53L0X loxRight;
 
 // ĐỊNH NGHĨA CHÂN XSHUT (THAY ĐỔI THEO SƠ ĐỒ CỦA BẠN)
 // Chân XSHUT kéo xuống LOW để tắt cảm biến, kéo lên HIGH để bật và đổi địa chỉ I2C.
@@ -78,6 +78,12 @@ void scanI2CBus() {
 void initSensors() {
     Serial.println("[MAZE] ============================================");
     Serial.println("[MAZE] Bat dau khoi tao cam bien (Wire SDA=21, SCL=22)");
+
+    // Kich hoat pull-up noi ESP32 tren SDA/SCL (~47kOhm)
+    // Day la giai phap tam thoi - nen them dien tro 4.7kOhm ngoai
+    pinMode(21, INPUT_PULLUP); // SDA
+    pinMode(22, INPUT_PULLUP); // SCL
+
     Wire.begin(21, 22);
     Wire.setClock(100000); // 100kHz - chuan, tuong thich toi da voi clone module
     delay(200); // Cho I2C bus va cac module on dinh sau khi cap nguon
@@ -150,77 +156,53 @@ void initSensors() {
     }
 
     // -------------------------------------------------------
-    // 2. Khởi tạo 3 cảm biến VL53L0X qua XSHUT
+    // 2. Khởi tạo 3 cảm biến VL53L0X qua XSHUT (Pololu library)
     // -------------------------------------------------------
-    Wire.setClock(100000); // VL53L0X hoat dong o 100kHz
-    delay(10);
-    Serial.println("[MAZE] [Buoc 2] Khoi tao 3x VL53L0X qua chan XSHUT (100kHz)...");
-    Serial.printf("[MAZE]   Cau hinh XSHUT: FRONT=GPIO%d, LEFT=GPIO%d, RIGHT=GPIO%d\n",
+    Serial.println("[MAZE] [Buoc 2] Khoi tao 3x VL53L0X qua chan XSHUT...");
+    Serial.printf("[MAZE]   XSHUT: FRONT=GPIO%d, LEFT=GPIO%d, RIGHT=GPIO%d\n",
                   XSHUT_FRONT, XSHUT_LEFT, XSHUT_RIGHT);
 
     pinMode(XSHUT_FRONT, OUTPUT);
     pinMode(XSHUT_LEFT,  OUTPUT);
     pinMode(XSHUT_RIGHT, OUTPUT);
 
-    // Reset tất cả - keo XSHUT xuong LOW de tat cam bien
+    // Reset tất cả - kéo XSHUT xuống LOW để tắt cảm biến
     digitalWrite(XSHUT_FRONT, LOW);
     digitalWrite(XSHUT_LEFT,  LOW);
     digitalWrite(XSHUT_RIGHT, LOW);
     Serial.println("[MAZE]   Tat het 3 cam bien (XSHUT=LOW)... OK");
-    delay(50); // Doi du lau de cam bien reset hoan toan
+    delay(10);
 
-    // --- FRONT ---
-    Serial.printf("[MAZE]   [2a] FRONT: XSHUT GPIO%d, init 0x30...\n", XSHUT_FRONT);
-    bool frontOk = false;
-    for (int r = 1; r <= 3; r++) {
-        // Hard-reset sensor ve 0x29 truoc moi lan thu
-        digitalWrite(XSHUT_FRONT, LOW);  delay(20);
-        digitalWrite(XSHUT_FRONT, HIGH); delay(50);
-        Serial.printf("[MAZE]     FRONT lan %d: ", r);
-        frontOk = loxFront.begin(0x30);
-        if (frontOk) { Serial.println("OK (0x30)"); break; }
-        Serial.println("THAT BAI");
-    }
-    if (!frontOk) {
-        Serial.println("[MAZE]   FRONT => THAT BAI sau 3 lan");
-        Serial.println("[MAZE]     Kiem tra: day XSHUT GPIO16, day SDA/SCL, nguon VCC 3.3V");
+    // --- FRONT: boot lên 0x29, init, đổi sang 0x30 ---
+    digitalWrite(XSHUT_FRONT, HIGH);
+    delay(10);
+    loxFront.setTimeout(500);
+    if (!loxFront.init()) {
+        Serial.println("[MAZE]   FRONT => THAT BAI! (Kiem tra XSHUT GPIO16, SDA/SCL, VCC 3.3V)");
     } else {
+        loxFront.setAddress(0x30);
         Serial.println("[MAZE]   FRONT => OK (dia chi 0x30)");
     }
 
-    // --- LEFT ---
-    Serial.printf("[MAZE]   [2b] LEFT: XSHUT GPIO%d, init 0x31...\n", XSHUT_LEFT);
-    bool leftOk = false;
-    for (int r = 1; r <= 3; r++) {
-        digitalWrite(XSHUT_LEFT, LOW);  delay(20);
-        digitalWrite(XSHUT_LEFT, HIGH); delay(50);
-        Serial.printf("[MAZE]     LEFT lan %d: ", r);
-        leftOk = loxLeft.begin(0x31);
-        if (leftOk) { Serial.println("OK (0x31)"); break; }
-        Serial.println("THAT BAI");
-    }
-    if (!leftOk) {
-        Serial.println("[MAZE]   LEFT  => THAT BAI sau 3 lan");
-        Serial.println("[MAZE]     Kiem tra: day XSHUT GPIO17, day SDA/SCL, nguon VCC 3.3V");
+    // --- LEFT: boot lên 0x29, init, đổi sang 0x31 ---
+    digitalWrite(XSHUT_LEFT, HIGH);
+    delay(10);
+    loxLeft.setTimeout(500);
+    if (!loxLeft.init()) {
+        Serial.println("[MAZE]   LEFT  => THAT BAI! (Kiem tra XSHUT GPIO17, SDA/SCL, VCC 3.3V)");
     } else {
+        loxLeft.setAddress(0x31);
         Serial.println("[MAZE]   LEFT  => OK (dia chi 0x31)");
     }
 
-    // --- RIGHT ---
-    Serial.printf("[MAZE]   [2c] RIGHT: XSHUT GPIO%d, init 0x32...\n", XSHUT_RIGHT);
-    bool rightOk = false;
-    for (int r = 1; r <= 3; r++) {
-        digitalWrite(XSHUT_RIGHT, LOW);  delay(20);
-        digitalWrite(XSHUT_RIGHT, HIGH); delay(50);
-        Serial.printf("[MAZE]     RIGHT lan %d: ", r);
-        rightOk = loxRight.begin(0x32);
-        if (rightOk) { Serial.println("OK (0x32)"); break; }
-        Serial.println("THAT BAI");
-    }
-    if (!rightOk) {
-        Serial.println("[MAZE]   RIGHT => THAT BAI sau 3 lan");
-        Serial.println("[MAZE]     Kiem tra: day XSHUT GPIO23, day SDA/SCL, nguon VCC 3.3V");
+    // --- RIGHT: boot lên 0x29, init, đổi sang 0x32 ---
+    digitalWrite(XSHUT_RIGHT, HIGH);
+    delay(10);
+    loxRight.setTimeout(500);
+    if (!loxRight.init()) {
+        Serial.println("[MAZE]   RIGHT => THAT BAI! (Kiem tra XSHUT GPIO23, SDA/SCL, VCC 3.3V)");
     } else {
+        loxRight.setAddress(0x32);
         Serial.println("[MAZE]   RIGHT => OK (dia chi 0x32)");
     }
 
@@ -313,18 +295,15 @@ void turnAround180() {
 // ----------------------------------------------------
 
 void readWalls() {
-    VL53L0X_RangingMeasurementData_t measureFront, measureLeft, measureRight;
-    
-    loxFront.rangingTest(&measureFront, false);
-    loxLeft.rangingTest(&measureLeft, false);
-    loxRight.rangingTest(&measureRight, false);
-    
-    bool wallFront = false, wallLeft = false, wallRight = false;
-    
-    // Nếu RangeStatus != 4 và khoảng cách nhỏ hơn giới hạn => có tường
-    if (measureFront.RangeStatus != 4 && measureFront.RangeMilliMeter < WALL_THRESHOLD_MM) wallFront = true;
-    if (measureLeft.RangeStatus != 4 && measureLeft.RangeMilliMeter < WALL_THRESHOLD_MM) wallLeft = true;
-    if (measureRight.RangeStatus != 4 && measureRight.RangeMilliMeter < WALL_THRESHOLD_MM) wallRight = true;
+    // Pololu VL53L0X: đọc khoảng cách bằng single-shot
+    uint16_t mmFront = loxFront.readRangeSingleMillimeters();
+    uint16_t mmLeft  = loxLeft.readRangeSingleMillimeters();
+    uint16_t mmRight = loxRight.readRangeSingleMillimeters();
+
+    // timeoutOccurred() trả về true nếu đọc bị lỗi/timeout => không có dữ liệu hợp lệ
+    bool wallFront = !loxFront.timeoutOccurred() && (mmFront < WALL_THRESHOLD_MM);
+    bool wallLeft  = !loxLeft.timeoutOccurred()  && (mmLeft  < WALL_THRESHOLD_MM);
+    bool wallRight = !loxRight.timeoutOccurred() && (mmRight < WALL_THRESHOLD_MM);
     
     int currentWallData = 0;
     
