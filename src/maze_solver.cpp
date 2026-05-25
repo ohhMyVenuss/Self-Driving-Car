@@ -18,9 +18,16 @@ VL53L0X loxRight;
 #define XSHUT_LEFT  17
 #define XSHUT_RIGHT 23
 
-// ĐỊNH NGHĨA KHOẢNG CÁCH NHẬN DIỆN TƯỜNG (mm)
-#define WALL_THRESHOLD_MM 150 
-#define CELL_MOVE_TIME_MS 800 // THAY ĐỔI: Thời gian (ms) chạy đúng 1 ô mê cung
+// ============================================================
+// THÔNG SỐ MÊ CUNG: Ma trận 20x20 ô, mỗi ô 200x200mm
+// ============================================================
+// Robot đứng giữa ô: cách tường = 100mm.
+// WALL_THRESHOLD: 120mm > 100mm (bắt được tường) & < 200mm (không nhầm ô kế).
+#define CELL_SIZE_MM       200   // Kích thước 1 ô: 200mm x 200mm
+#define WALL_THRESHOLD_MM  120   // Ngưỡng phát hiện tường (mm) — < nửa ô + 20mm margin
+// Ước tính tốc độ N20 @ base_pwm=150/255: ~15–18 cm/s => 200mm / 160mm/s ≈ 1250ms
+// TUNE LẠI sau khi lắp bánh: tăng nếu xe đi thiếu, giảm nếu xe đi dư 1 ô.
+#define CELL_MOVE_TIME_MS  1250  // Thời gian (ms) để đi đúng 1 ô 200mm
 
 // --- BIẾN TOÀN CỤC MAZE ---
 #define MAZE_SIZE 20 
@@ -220,29 +227,42 @@ void initSensors() {
 // ----------------------------------------------------
 
 // Đi thẳng 1 ô (Dùng MPU6050 bù lệch)
+// Cell 200mm — tune CELL_MOVE_TIME_MS nếu xe đi thiếu/dư 1 ô.
 void moveForwardOneCell() {
-    Serial.println("[MAZE] Di chuyen 1 o...");
+    Serial.printf("[MAZE] Di chuyen 1 o (%dmm, %dms)...\n", CELL_SIZE_MM, CELL_MOVE_TIME_MS);
     unsigned long startMs = millis();
-    
-    float Kp_gyro = 2.0; // Hệ số chỉnh thẳng (Chỉnh lớn nếu xe vẫn bị lạng)
-    int base_pwm = 150;
-    
-    // Chạy tới khi đủ thời gian (hoặc có thể kết hợp VL53L0X Front để phanh gấp)
-    while (millis() - startMs < CELL_MOVE_TIME_MS) {
+
+    // Kp_gyro = 3.0: Ô nhỏ 200mm cần chỉnh lái nhạy hơn để không lệch lề.
+    // Tăng nếu xe vẫn lạng; Giảm nếu xe dao động/rung.
+    const float Kp_gyro = 3.0;
+
+    // base_pwm: PWM chạy thẳng (0–255).
+    // 150/255 ≈ 59% duty cycle — phù hợp ô 200mm, tránh trượt khi phanh.
+    // Tăng nếu xe chạy quá chậm; Giảm nếu xe khó dừng đúng ô.
+    const int base_pwm = 150;
+
+    // Phanh sớm 50ms trước khi hết thời gian để tránh trôi quán tính
+    const unsigned long brakeEarlyMs = 50;
+
+    while (millis() - startMs < CELL_MOVE_TIME_MS - brakeEarlyMs) {
         mpu.update();
         float currentZ = mpu.getAngleZ();
-        float error = targetAngle - currentZ;
-        
+        float error    = targetAngle - currentZ;
         int correction = (int)(Kp_gyro * error);
-        
+
+        // Giới hạn correction tránh bão hòa PWM
+        correction = constrain(correction, -60, 60);
+
         // Nếu xe lệch phải (góc âm) -> correction dương -> Tăng L, giảm R
-        int leftPWM = base_pwm - correction;
-        int rightPWM = base_pwm + correction;
-        
+        int leftPWM  = constrain(base_pwm - correction, 0, 255);
+        int rightPWM = constrain(base_pwm + correction, 0, 255);
         setMotor(leftPWM, rightPWM);
     }
-    
-    setMotor(0, 0); // Phanh
+
+    // Phanh chủ động (active braking) 50ms
+    setMotor(-80, -80);
+    delay(brakeEarlyMs);
+    setMotor(0, 0); // Giữ yên
     
     // Cập nhật hệ tọa độ
     if (currentHeading == NORTH) posY++;
@@ -253,40 +273,48 @@ void moveForwardOneCell() {
 
 void turnLeft90() {
     Serial.println("[MAZE] Quay Trai 90 do");
-    targetAngle += 90.0; // Góc tăng khi rẽ trái
-    
-    setMotor(-120, 120);
+    targetAngle += 90.0;
+
+    // turn_pwm = 100: PWM xoay tại chỗ — chậm đủ để MPU đọc chính xác góc 90°.
+    // Tăng nếu xe quay quá chậm/không đủ 90°; Giảm nếu xe vượt quá góc.
+    const int turn_pwm = 100;
+    setMotor(-turn_pwm, turn_pwm);
     while (true) {
         mpu.update();
         if (mpu.getAngleZ() >= targetAngle) break;
     }
     setMotor(0, 0);
+    delay(100); // Chờ quán tính dừng hẳn
     currentHeading = (Heading)((currentHeading + 3) % 4);
 }
 
 void turnRight90() {
     Serial.println("[MAZE] Quay Phai 90 do");
-    targetAngle -= 90.0; // Góc giảm khi rẽ phải
-    
-    setMotor(120, -120);
+    targetAngle -= 90.0;
+
+    const int turn_pwm = 100;
+    setMotor(turn_pwm, -turn_pwm);
     while (true) {
         mpu.update();
         if (mpu.getAngleZ() <= targetAngle) break;
     }
     setMotor(0, 0);
+    delay(100);
     currentHeading = (Heading)((currentHeading + 1) % 4);
 }
 
 void turnAround180() {
     Serial.println("[MAZE] Quay 180 do");
     targetAngle -= 180.0;
-    
-    setMotor(120, -120);
+
+    const int turn_pwm = 100;
+    setMotor(turn_pwm, -turn_pwm);
     while (true) {
         mpu.update();
         if (mpu.getAngleZ() <= targetAngle) break;
     }
     setMotor(0, 0);
+    delay(100);
     currentHeading = (Heading)((currentHeading + 2) % 4);
 }
 
@@ -442,5 +470,6 @@ void loopMazeSolver() {
         moveForwardOneCell();
     }
     
-    delay(300); // Dừng tĩnh một chút trước ô tiếp theo để mpu và cảm biến ToF ổn định
+    // 400ms: ô 200mm nhỏ, cần để MPU6050 và VL53L0X ổn định giữa các bước di chuyển.
+    delay(400);
 }
