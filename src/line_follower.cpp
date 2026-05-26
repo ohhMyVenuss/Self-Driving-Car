@@ -1,7 +1,7 @@
 #include "robot_common.h"
 
 // ========== Global Data ==========
-const int SENSOR_PINS[SENSOR_COUNT] = {32, 33, 34, 35, 27, 4, 25, 26};
+const int SENSOR_PINS[SENSOR_COUNT] = {36, 39, 34, 35, 32, 33, 25, 26};
 int sensorValues[SENSOR_COUNT];
 int normalizedValues[SENSOR_COUNT];
 int sensorMin[SENSOR_COUNT];

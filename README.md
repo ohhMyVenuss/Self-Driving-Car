@@ -100,7 +100,7 @@ Mục đích: mô tả cách các chân GPIO được cắm trên bo mạch ESP3
 
 5) File tham chiếu trong project
 - Định nghĩa chân: `src/robot_common.h`
-- Mảng chân cảm biến: `src/line_follower.cpp` (line: `const int SENSOR_PINS[SENSOR_COUNT] = {32,33,34,35,27,4,25,26};`)
+- Mảng chân cảm biến: `src/line_follower.cpp` (line: `const int SENSOR_PINS[SENSOR_COUNT] = {36, 39, 34, 35, 32, 33, 25, 26};`)
 
 6) Mẹo khắc phục:
 - Nếu chỉ có 1 bánh chạy: đổi dây PWM giữa AIN1/AIN2 và BIN1/BIN2 tạm để kiểm tra xem vấn đề nằm ở ESP32 (pin/PWM) hay DRV8833/motor.
